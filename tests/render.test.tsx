@@ -18,8 +18,19 @@ const done = (stdout: string, exitCode = 0) => ({
 
 const host = (on: On, terminal: string, picture = PNG) => {
   const ran: string[] = []
+  const copied: string[] = []
+  const copiedImages: string[] = []
+  const toasts: string[] = []
+  on('ui.toast', (_, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
   on('process.run', (_, e) => {
     ran.push(e.argv[0] ?? '')
+    if (e.argv[0] === 'sh' && e.argv[2]?.includes('wl-copy')) {
+      copiedImages.push(e.argv[4] ?? '')
+      return done('')
+    }
     if (e.argv[0] === 'sh') return done(terminal)
     if (e.argv[0] === 'mmdc') return done('')
     return done('', 1)
@@ -28,11 +39,15 @@ const host = (on: On, terminal: string, picture = PNG) => {
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('fs.read', () => ({ value: { base64: picture } }))
   on('prompt.compose', () => ({ sections: [{ id: 'engine', text: 'You are Claude.', scope: 'session' }] }))
+  on('ui.copy', (_, e) => {
+    copied.push(e.text)
+    return { value: { isCopied: true } }
+  })
   on('ui.render', { component: 'AssistantMessage' }, ($, e) => {
     const { Markdown } = $.ui.resolve(e)
     return <Markdown text={e.props.text} />
   })
-  return ran
+  return { ran, copied, copiedImages, toasts }
 }
 
 const COMPOSE = {
@@ -82,7 +97,7 @@ test('in Ghostty it draws the PNG from mmdc as an Image beside the markdown', as
 })
 
 test('inside tmux it never runs mmdc and the engine draws the block as code', async ($, on) => {
-  const ran = host(on, GHOSTTY_IN_TMUX)
+  const { ran } = host(on, GHOSTTY_IN_TMUX)
   const mounted = await $.ui.mount(reply('m2'))
   await settle()
 
@@ -100,3 +115,27 @@ test('a tall diagram keeps its proportions at the same scale as any other', asyn
   expect(image?.props).toMatchObject({ columns: 14, rows: 25 })
 })
 
+
+test('Copy puts the diagram Mermaid code on the clipboard', async ($, on) => {
+  const { copied } = host(on, GHOSTTY)
+  const mounted = await $.ui.mount(reply('m6'))
+  await settle()
+
+  const copy = await mounted.find({ type: 'Button', text: 'Copy' })
+  await mounted.press({ key: copy?.key ?? '' })
+
+  expect(copied).toEqual(['graph LR\nA --> B'])
+})
+
+test('Copy PNG copies the rendered diagram file', async ($, on) => {
+  const { ran, copiedImages, toasts } = host(on, GHOSTTY)
+  const mounted = await $.ui.mount(reply('m7'))
+  await settle()
+
+  const copyPng = await mounted.find({ type: 'Button', text: 'Copy PNG' })
+  await mounted.press({ key: copyPng?.key ?? '' })
+
+  expect(ran.filter(cmd => cmd === 'mmdc')).toHaveLength(1)
+  expect(copiedImages).toEqual([expect.stringMatching(/@4x\.png$/)])
+  expect(toasts).toEqual(['Diagram PNG copied'])
+})

@@ -104,6 +104,22 @@ async function toPng($: EngineInterface, { source, hash }: Diagram): Promise<Ren
   return { kind: 'png', file: output, ...pngSize(base64) }
 }
 
+// The clipboard tools stay in the background serving the image; with their output
+// redirected, process.run does not wait for them.
+const COPY_IMAGE_SCRIPT = `
+f="$1"
+if [ -n "$WAYLAND_DISPLAY" ] && command -v wl-copy; then wl-copy --type image/png < "$f"
+elif command -v xclip; then xclip -selection clipboard -t image/png -i "$f"
+elif command -v osascript; then osascript -e "set the clipboard to (read (POSIX file \\"$f\\") as «class PNGf»)"
+else exit 127
+fi >/dev/null 2>&1
+`
+
+async function copyImage($: EngineInterface, file: string) {
+  const { exitCode } = await $.process.run(['sh', '-c', COPY_IMAGE_SCRIPT, 'sh', file], { timeoutMs: 10_000 })
+  $.ui.toast(exitCode === 0 ? 'Diagram PNG copied' : 'No clipboard tool for images (wl-copy, xclip or osascript)')
+}
+
 function ensure($: EngineInterface, diagram: Diagram): Rendered | undefined {
   if (!cache.has(diagram.hash) && !pending.has(diagram.hash)) {
     pending.add(diagram.hash)
@@ -141,7 +157,7 @@ export const register: Register = on => {
 
     const maxColumns = Math.max(20, (e.viewport?.columns ?? 100) - 4)
     const maxRows = Math.floor((e.viewport?.rows ?? 40) * SHARE_OF_SCREEN)
-    const { Box, Markdown, Image, Code } = $.ui.resolve(e)
+    const { Box, Markdown, Image, Code, Button } = $.ui.resolve(e)
 
     return (
       <Box flexDirection="column">
@@ -149,7 +165,23 @@ export const register: Register = on => {
           if (s.kind === 'text') return s.text.trim() === '' ? null : <Markdown key={`t${i}`} text={s.text} />
           const r = cache.get(s.hash)
           if (r?.kind !== 'png') return <Code key={`m${i}`} source={s.source} language="mermaid" />
-          return <Image key={`m${i}`} source={{ file: r.file, format: 'png' }} {...fit(r, maxColumns, maxRows)} alt="mermaid diagram" />
+          return (
+            <Box key={`m${i}`} flexDirection="column">
+              <Image source={{ file: r.file, format: 'png' }} {...fit(r, maxColumns, maxRows)} alt="mermaid diagram" />
+              <Box>
+                <Button
+                  key={`copy-${s.hash}`}
+                  label="Copy"
+                  dimColor
+                  onPress={async press => {
+                    const { isCopied } = await $.ui.copy({ text: s.source, surface: press.surface })
+                    if (isCopied) $.ui.toast('Mermaid code copied')
+                  }}
+                />
+                <Button key={`copy-png-${s.hash}`} label="Copy PNG" dimColor onPress={() => copyImage($, r.file)} />
+              </Box>
+            </Box>
+          )
         })}
       </Box>
     )

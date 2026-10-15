@@ -10,6 +10,9 @@ images, right in the terminal.
 Diagrams are drawn as large as the terminal allows: up to its full width and 80% of
 its height, keeping their proportions.
 
+Press **Copy** under a diagram to put its Mermaid code on the clipboard, or **Copy PNG**
+for the image (needs `wl-copy`, `xclip` or macOS).
+
 ## Requirements
 
 [mermaid-cli](https://github.com/mermaid-js/mermaid-cli) on your `PATH`:
