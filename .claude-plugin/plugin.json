@@ -2,5 +2,7 @@
   "name": "mermaid-render",
   "version": "0.1.0",
   "description": "Renders ```mermaid blocks in Claude Code replies as images in terminals that support them (Ghostty, kitty)",
-  "author": { "name": "Pablo Freire" }
+  "author": {
+    "name": "Pablo Freire"
+  }
 }

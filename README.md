@@ -3,9 +3,12 @@
 A Claude Code plugin that draws ```` ```mermaid ```` blocks in Claude's replies as
 images, right in the terminal.
 
-- **Ghostty or kitty** (outside tmux): tells Claude to prefer Mermaid for diagrams
-  and renders each block as an image with `mmdc`.
+- **Ghostty or kitty** (outside tmux): tells Claude to prefer Mermaid for diagrams,
+  laid out left to right, and renders each block as an image with `mmdc`.
 - **Any other terminal:** does nothing. Claude keeps drawing diagrams in ASCII.
+
+Diagrams are drawn as large as the terminal allows: up to its full width and 80% of
+its height, keeping their proportions.
 
 ## Requirements
 
