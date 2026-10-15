@@ -1,0 +1,5 @@
+{
+  "name": "mermaid-render",
+  "owner": { "name": "Pablo Freire" },
+  "plugins": [{ "name": "mermaid-render", "source": "./" }]
+}
