@@ -1,5 +1,5 @@
 {
-  "name": "mermaid-render",
+  "name": "cc-diagrams",
   "version": "0.2.0",
   "description": "Renders ```mermaid blocks in Claude Code replies as images in terminals that support them (Ghostty, kitty)",
   "author": {

@@ -22,7 +22,7 @@ const MERMAID_CONFIG = JSON.stringify({
 const SHARE_OF_SCREEN = 0.8
 
 const PROMPT_SECTION = {
-  id: 'mermaid-render:diagrams',
+  id: 'cc-diagrams:mermaid',
   text: 'This terminal renders ```mermaid code blocks as images. When a diagram helps, prefer a Mermaid block over an ASCII drawing. The terminal is much wider than it is tall, so prefer left-to-right layouts (graph LR) over top-down ones.',
   scope: 'session',
 } as const
@@ -92,9 +92,9 @@ function readEnv($: EngineInterface): Promise<Env> {
 
 async function toPng($: EngineInterface, { source, hash }: Diagram): Promise<Rendered> {
   const { home } = await readEnv($)
-  const input = `${home}/.cache/claude-mermaid-render/${hash}.mmd`
-  const config = `${home}/.cache/claude-mermaid-render/config.${hashOf(MERMAID_CONFIG)}.json`
-  const output = `${home}/.cache/claude-mermaid-render/${hash}.${hashOf(MERMAID_CONFIG)}@${MMDC_SCALE}x.png`
+  const input = `${home}/.cache/cc-diagrams/${hash}.mmd`
+  const config = `${home}/.cache/cc-diagrams/config.${hashOf(MERMAID_CONFIG)}.json`
+  const output = `${home}/.cache/cc-diagrams/${hash}.${hashOf(MERMAID_CONFIG)}@${MMDC_SCALE}x.png`
   await $.fs.write(input, source)
   await $.fs.write(config, MERMAID_CONFIG)
   const args = ['-i', input, '-o', output, '-c', config, '-t', 'dark', '-b', 'transparent', '-s', String(MMDC_SCALE), '-q']

@@ -65,7 +65,7 @@ const settle = async () => {
 
 const reply = (requestId: string) =>
   ({
-    plugin: 'mermaid-render',
+    plugin: 'cc-diagrams',
     surface: 'terminal',
     component: 'AssistantMessage',
     props: { text: REPLY, isFirstOfReply: true },
@@ -76,7 +76,7 @@ const reply = (requestId: string) =>
 test('in Ghostty it asks the model for Mermaid', async ($, on) => {
   host(on, GHOSTTY)
   const { sections } = await $.prompt.compose(COMPOSE)
-  expect(sections.map(s => s.id)).toEqual(['engine', 'mermaid-render:diagrams'])
+  expect(sections.map(s => s.id)).toEqual(['engine', 'cc-diagrams:mermaid'])
 })
 
 test('without images it leaves the prompt alone, so the model keeps drawing ASCII', async ($, on) => {
@@ -92,7 +92,7 @@ test('in Ghostty it draws the PNG from mmdc as an Image beside the markdown', as
 
   const image = await mounted.find({ type: 'Image' })
   expect(image?.props).toMatchObject({ columns: 27, rows: 3 })
-  expect(image?.props.source).toMatchObject({ format: 'png', file: expect.stringMatching(/^\/home\/u\/\.cache\/claude-mermaid-render\/[0-9a-f]+\.[0-9a-f]+@4x\.png$/) })
+  expect(image?.props.source).toMatchObject({ format: 'png', file: expect.stringMatching(/^\/home\/u\/\.cache\/cc-diagrams\/[0-9a-f]+\.[0-9a-f]+@4x\.png$/) })
   expect(await mounted.find({ type: 'Markdown', text: /Así lo entiendo/ })).toBeDefined()
 })
 

@@ -1,4 +1,4 @@
-# mermaid-render
+# cc-diagrams
 
 A Claude Code plugin that draws ```` ```mermaid ```` blocks in Claude's replies as
 images, right in the terminal.
@@ -26,7 +26,7 @@ npm i -g @mermaid-js/mermaid-cli
 At the prompt of a Claude Code terminal session:
 
 ```
-/plugin install mermaid-render --marketplace pablofrr/mermaid-render
+/plugin install cc-diagrams --marketplace pablofrr/cc-diagrams
 ```
 
 Answer `y` to add the marketplace, then pick a scope.
@@ -39,4 +39,4 @@ claude plugin test .
 claude --plugin-dir .
 ```
 
-Rendered diagrams are cached in `~/.cache/claude-mermaid-render`.
+Rendered diagrams are cached in `~/.cache/cc-diagrams`.

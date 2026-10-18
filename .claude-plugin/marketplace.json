@@ -1,12 +1,12 @@
 {
-  "name": "mermaid-render",
+  "name": "cc-diagrams",
   "description": "Renders Mermaid diagrams in Claude Code in terminals that support them",
   "owner": {
     "name": "Pablo Freire"
   },
   "plugins": [
     {
-      "name": "mermaid-render",
+      "name": "cc-diagrams",
       "source": "./"
     }
   ]
