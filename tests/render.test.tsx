@@ -8,15 +8,13 @@ const TALL = 'iVBORw0KGgoAAAANSUhEUgAAAZAAAAZACAYAAABXJhRtAAAJyUlEQVR42u3BAQ0AAA
 
 const REPLY = 'Así lo entiendo:\n\n```mermaid\ngraph LR\nA --> B\n```\n\n¿Es eso?'
 
-const GHOSTTY = '/home/u\nxterm-ghostty\nghostty\n'
-const GNOME = '/home/u\nxterm-256color\ngnome\n'
-const GHOSTTY_IN_TMUX = '/home/u\ntmux-256color\nghostty\n/tmp/tmux-1000/default,1,0'
+const HOME = '/home/u'
 
 const done = (stdout: string, exitCode = 0) => ({
   value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
 })
 
-const host = (on: On, terminal: string, picture = PNG) => {
+const host = (on: On, picture = PNG) => {
   const ran: string[] = []
   const copied: string[] = []
   const copiedImages: string[] = []
@@ -31,7 +29,7 @@ const host = (on: On, terminal: string, picture = PNG) => {
       copiedImages.push(e.argv[4] ?? '')
       return done('')
     }
-    if (e.argv[0] === 'sh') return done(terminal)
+    if (e.argv[0] === 'sh') return done(HOME)
     if (e.argv[0] === 'mmdc') return done('')
     return done('', 1)
   })
@@ -73,20 +71,14 @@ const reply = (requestId: string) =>
     viewport: { columns: 120, rows: 40 },
   }) as const
 
-test('in Ghostty it asks the model for Mermaid', async ($, on) => {
-  host(on, GHOSTTY)
+test('it asks the model for Mermaid', async ($, on) => {
+  host(on)
   const { sections } = await $.prompt.compose(COMPOSE)
   expect(sections.map(s => s.id)).toEqual(['engine', 'cc-diagrams:mermaid'])
 })
 
-test('without images it leaves the prompt alone, so the model keeps drawing ASCII', async ($, on) => {
-  host(on, GNOME)
-  const { sections } = await $.prompt.compose(COMPOSE)
-  expect(sections.map(s => s.id)).toEqual(['engine'])
-})
-
-test('in Ghostty it draws the PNG from mmdc as an Image beside the markdown', async ($, on) => {
-  host(on, GHOSTTY)
+test('it draws the PNG from mmdc as an Image beside the markdown', async ($, on) => {
+  host(on)
   const mounted = await $.ui.mount(reply('m1'))
   await settle()
 
@@ -96,18 +88,17 @@ test('in Ghostty it draws the PNG from mmdc as an Image beside the markdown', as
   expect(await mounted.find({ type: 'Markdown', text: /Así lo entiendo/ })).toBeDefined()
 })
 
-test('inside tmux it never runs mmdc and the engine draws the block as code', async ($, on) => {
-  const { ran } = host(on, GHOSTTY_IN_TMUX)
+test('the Image falls back to the Mermaid code where the terminal cannot draw pictures', async ($, on) => {
+  host(on)
   const mounted = await $.ui.mount(reply('m2'))
   await settle()
 
-  expect(await mounted.find({ type: 'Image' })).toBeUndefined()
-  expect(JSON.stringify(await mounted.drawn())).toContain('graph LR')
-  expect(ran).not.toContain('mmdc')
+  const image = await mounted.find({ type: 'Image' })
+  expect(image?.props.alt).toBe('graph LR\nA --> B')
 })
 
 test('a tall diagram keeps its proportions at the same scale as any other', async ($, on) => {
-  host(on, GHOSTTY, TALL)
+  host(on, TALL)
   const mounted = await $.ui.mount(reply('m3'))
   await settle()
 
@@ -117,7 +108,7 @@ test('a tall diagram keeps its proportions at the same scale as any other', asyn
 
 
 test('Copy puts the diagram Mermaid code on the clipboard', async ($, on) => {
-  const { copied } = host(on, GHOSTTY)
+  const { copied } = host(on)
   const mounted = await $.ui.mount(reply('m6'))
   await settle()
 
@@ -128,7 +119,7 @@ test('Copy puts the diagram Mermaid code on the clipboard', async ($, on) => {
 })
 
 test('Copy PNG copies the rendered diagram file', async ($, on) => {
-  const { ran, copiedImages, toasts } = host(on, GHOSTTY)
+  const { ran, copiedImages, toasts } = host(on)
   const mounted = await $.ui.mount(reply('m7'))
   await settle()
 

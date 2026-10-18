@@ -1,17 +1,14 @@
 # cc-diagrams
 
-A Claude Code plugin that draws ```` ```mermaid ```` blocks in Claude's replies as
-images, right in the terminal.
+A Claude Code plugin that draws mermaid blocks in Claude code CLI.
 
-- **Ghostty or kitty** (outside tmux): tells Claude to prefer Mermaid for diagrams,
-  laid out left to right, and renders each block as an image with `mmdc`.
-- **Any other terminal:** does nothing. Claude keeps drawing diagrams in ASCII.
+![Claude Code in Ghostty answering "draw a diagram for the decision process of the sell endpoint" with a rendered flowchart](docs/flowchart.png)
 
-Diagrams are drawn as large as the terminal allows: up to its full width and 80% of
-its height, keeping their proportions.
+
+![A login sequence diagram rendered in Claude Code](docs/sequence.png)
 
 Press **Copy** under a diagram to put its Mermaid code on the clipboard, or **Copy PNG**
-for the image (needs `wl-copy`, `xclip` or macOS).
+for the image (needs `wl-copy`, `xclip` or macOS)
 
 ## Requirements
 
@@ -20,6 +17,7 @@ for the image (needs `wl-copy`, `xclip` or macOS).
 ```sh
 npm i -g @mermaid-js/mermaid-cli
 ```
+Works it terminal emualator has kitty graphics protocol
 
 ## Install
 

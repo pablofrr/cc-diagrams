@@ -23,11 +23,9 @@ const SHARE_OF_SCREEN = 0.8
 
 const PROMPT_SECTION = {
   id: 'cc-diagrams:mermaid',
-  text: 'This terminal renders ```mermaid code blocks as images. When a diagram helps, prefer a Mermaid block over an ASCII drawing. The terminal is much wider than it is tall, so prefer left-to-right layouts (graph LR) over top-down ones.',
+  text: 'Mermaid code blocks in your replies are rendered as diagrams. When a diagram helps, prefer a ```mermaid block over an ASCII drawing. The terminal is much wider than it is tall, so prefer left-to-right layouts (graph LR) over top-down ones.',
   scope: 'session',
 } as const
-
-type Env = { home: string; hasGraphics: boolean }
 
 type Diagram = { hash: string; source: string }
 
@@ -75,26 +73,19 @@ const fit = (png: { width: number; height: number }, maxColumns: number, maxRows
   return { columns, rows }
 }
 
-let env: Promise<Env> | undefined
+let home: Promise<string> | undefined
 const cache = new Map<string, Rendered>()
 const pending = new Set<string>()
 
-// Images need the kitty graphics protocol, which tmux does not pass through.
-function readEnv($: EngineInterface): Promise<Env> {
-  return (env ??= $.process
-    .run(['sh', '-c', 'printf "%s\\n%s\\n%s\\n%s" "$HOME" "$TERM" "$TERM_PROGRAM" "$TMUX"'])
-    .then(({ stdout }) => {
-      const [home = '', term = '', program = '', tmux = ''] = stdout.split('\n')
-      const isGraphicsTerminal = /kitty|ghostty/i.test(`${term} ${program}`)
-      return { home, hasGraphics: isGraphicsTerminal && tmux === '' }
-    }))
+function readHome($: EngineInterface): Promise<string> {
+  return (home ??= $.process.run(['sh', '-c', 'printf %s "$HOME"']).then(({ stdout }) => stdout))
 }
 
 async function toPng($: EngineInterface, { source, hash }: Diagram): Promise<Rendered> {
-  const { home } = await readEnv($)
-  const input = `${home}/.cache/cc-diagrams/${hash}.mmd`
-  const config = `${home}/.cache/cc-diagrams/config.${hashOf(MERMAID_CONFIG)}.json`
-  const output = `${home}/.cache/cc-diagrams/${hash}.${hashOf(MERMAID_CONFIG)}@${MMDC_SCALE}x.png`
+  const dir = `${await readHome($)}/.cache/cc-diagrams`
+  const input = `${dir}/${hash}.mmd`
+  const config = `${dir}/config.${hashOf(MERMAID_CONFIG)}.json`
+  const output = `${dir}/${hash}.${hashOf(MERMAID_CONFIG)}@${MMDC_SCALE}x.png`
   await $.fs.write(input, source)
   await $.fs.write(config, MERMAID_CONFIG)
   const args = ['-i', input, '-o', output, '-c', config, '-t', 'dark', '-b', 'transparent', '-s', String(MMDC_SCALE), '-q']
@@ -137,15 +128,11 @@ function ensure($: EngineInterface, diagram: Diagram): Rendered | undefined {
 export const register: Register = on => {
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
-    const { hasGraphics } = await readEnv($)
-    return hasGraphics ? { sections: [...composed.sections, PROMPT_SECTION] } : composed
+    return { sections: [...composed.sections, PROMPT_SECTION] }
   })
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     if (e.surface !== 'terminal' || !e.props.text.includes('```mermaid')) return next(e)
-
-    const { hasGraphics } = await readEnv($)
-    if (!hasGraphics) return next(e)
 
     const segments = split(e.props.text)
     const blocks = segments.filter(s => s.kind === 'mermaid')
@@ -167,7 +154,8 @@ export const register: Register = on => {
           if (r?.kind !== 'png') return <Code key={`m${i}`} source={s.source} language="mermaid" />
           return (
             <Box key={`m${i}`} flexDirection="column">
-              <Image source={{ file: r.file, format: 'png' }} {...fit(r, maxColumns, maxRows)} alt="mermaid diagram" />
+              {/* Where the terminal cannot draw pictures, the engine shows the alt: the diagram's code. */}
+              <Image source={{ file: r.file, format: 'png' }} {...fit(r, maxColumns, maxRows)} alt={s.source} />
               <Box>
                 <Button
                   key={`copy-${s.hash}`}
